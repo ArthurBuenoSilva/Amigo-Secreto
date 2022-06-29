@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html style="height: 100%" class="bg-light">
+<head>
+    <title>Amigo Secreto</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hover-color:hover{
+            background-color: #ebedf0;
+        }
+    </style>
+</head>
+<body class="container h-100 bg-light">
+    <div class="d-flex flex-column justify-content-center align-items-center h-100 pb-5" id="caixa1">
+        <h2 class="p-2 pb-3">Amigo Secreto</h2>
+        <form class="form p-2" id="form">
+            <div class="d-flex justify-content-center align-items-center">
+                <input class="form-control me-3 border border-primary" type="text" id="name" placeholder="Seu nome..."/>
+                <input class="btn btn-primary" type="submit" value="Enviar" onclick="hide()"/>
+            </div>
+        </form>
+    </div>
+
+    <div class="d-flex flex-column justify-content-center align-items-center h-100 pb-5" id="caixa2">
+       <h2 class="p-2 pb-5">Amigo Secreto</h2>
+       <div class="d-flex flex-wrap justify-content-center align-items-stretch" id="insertHere">
+
+       </div>
+        <form class="form p-2" id="form_2">
+            <input class="btn btn-primary mt-5 ps-5 pe-5 pt-2 pb-2" type="submit" value="Sortear" id="sortear"/>
+        </form>
+   </div>
+
+    <div class="modal" id='modal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal_title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var socket = io()
+
+    var form = document.getElementById('form')
+    var form_2 = document.getElementById('form_2')
+    var modal_title = document.getElementById('modal_title')
+    var input = document.getElementById('name')
+    var elemento = document.getElementById('caixa1')
+    var parent = document.getElementById('insertHere')
+    var my_name = ''
+    var owner = ''
+
+    function hide() {
+        setTimeout(() => { elemento.parentNode.removeChild(elemento) }, 800);
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault()
+        if (input.value !== '') {
+            my_name = input.value.toUpperCase()
+            socket.emit('send name', input.value)
+        }
+    })
+
+    form_2.addEventListener('submit', function (e) {
+        e.preventDefault()
+        socket.emit('sortear')
+    })
+
+    socket.on('error_message', (msg) => {
+        alert(msg)
+    })
+
+    socket.on('room_owner', (room_owner) => {
+       owner = room_owner
+        if(my_name !== owner)
+            document.getElementById('sortear').parentNode.removeChild(document.getElementById('sortear'))
+    })
+
+    socket.on('insertParticipant', (list) => {
+        for (let i = 0; i < list.length; i++) {
+            var elem = '<div class="btn btn-light border border-primary p-5 m-2 hover-color remover" id="' + i + '">' + list[i] + '</div>'
+            parent.innerHTML += elem
+        }
+    })
+
+    socket.on('removeAllParticipant', (list)=>{
+        for (let i = 0; i < list.length; i++) {
+            document.getElementById(i).parentNode.removeChild(document.getElementById(i))
+        }
+    })
+
+    socket.on('sorteado', (list) => {
+
+        if(list[0] === my_name){
+            console.log(list[1])
+            modal_title.value = 'Você é o amigo secreto de ' + list[1]
+            console.log('Você é o amigo secreto de ' + list[1])
+        }else if(list[1] === my_name){
+            console.log(list[0])
+            modal_title.value = 'Você é o amigo secreto de ' + list[0]
+            console.log('Você é o amigo secreto de ' + list[0])
+        }
+    })
+
+    socket.on("connect", () => {
+        // ...
+    })
+
+    socket.on("data", () => { /* ... */ });
+</script>
+</body>
+</html>

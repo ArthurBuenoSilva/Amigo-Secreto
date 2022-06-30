@@ -21,47 +21,51 @@ io.on('connection', (socket) => {
 
     socket.on('send name', (text) => {
         name = text.toUpperCase()
+        let exist = false
 
-        if(is_first_name && room_owner === ''){
-            names.push(name)
-            is_first_name = false
-            room_owner = name
+        if (names.indexOf(name) !== -1){
+            exist = true
+            socket.emit('error_message', (name + ' já existe!'))
         }
-        else{
-            if (names.indexOf(name) === -1){
+
+        if (!exist){
+            if(is_first_name && room_owner === ''){
                 names.push(name)
-            }else{
-                socket.emit('error_message', (name + ' já existe!'))
+                is_first_name = false
+                room_owner = name
             }
-        }
+            else
+                names.push(name)
 
-        socket.emit('room_owner', room_owner)
-        io.emit('removeAllParticipant', names)
-        io.emit('insertParticipant', names)
+            socket.emit('hide')
+            socket.emit('room_owner', room_owner)
+            io.emit('removeAllParticipant', names)
+            io.emit('insertParticipant', names)
+        }
     })
 
     socket.on('sortear', () => {
-        while(names.length !== 0){
-            var nSorteado = -1
-            var name = names[0]
-            var sorteado = name
-            while(sorteado === name){
-                nSorteado = Math.floor(Math.random() * names.length)
-                sorteado = names[nSorteado]
+        if(names.length % 2 === 0){
+            let aux = []
+
+            for (let i = 0; i < names.length; i++) {
+                aux.push(names[i])
             }
 
-            names.shift()
-            var temp = names[nSorteado]
-            names.splice(nSorteado)
-            names.unshift(temp)
+            for (let i = aux.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [aux[i], aux[j]] = [aux[j], aux[i]];
+            }
 
-            io.emit('sorteado', [name, sorteado])
+            while(aux.length !== 0){
+                io.emit('sorteado', [aux[0], aux[1]])
+                aux.shift()
+                aux.shift()
+            }
+        }else{
+            socket.emit('error_message', 'Não foi possível sortear, a quantidade de participantes na sala deve ser par')
         }
     })
-})
-
-io.on('disconnection', (socket) =>{
-
 })
 
 server.listen(3000, () => {

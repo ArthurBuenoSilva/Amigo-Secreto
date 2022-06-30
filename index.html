@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="height: 100%" class="bg-light">
+<html style="height: 100%; overflow: hidden" class="bg-light">
 <head>
     <title>Amigo Secreto</title>
     <meta charset="utf-8">
@@ -12,19 +12,19 @@
         }
     </style>
 </head>
-<body class="container h-100 bg-light">
+<body class="container h-100 bg-light" style="overflow: hidden">
     <div class="d-flex flex-column justify-content-center align-items-center h-100 pb-5" id="caixa1">
         <h2 class="p-2 pb-3">Amigo Secreto</h2>
         <form class="form p-2" id="form">
             <div class="d-flex justify-content-center align-items-center">
                 <input class="form-control me-3 border border-primary" type="text" id="name" placeholder="Seu nome..."/>
-                <input class="btn btn-primary" type="submit" value="Enviar" onclick="hide()"/>
+                <input class="btn btn-primary" type="submit" value="Enviar"/>
             </div>
         </form>
     </div>
 
     <div class="d-flex flex-column justify-content-center align-items-center h-100 pb-5" id="caixa2">
-       <h2 class="p-2 pb-5">Amigo Secreto</h2>
+       <h2 class="p-2 pb-5" id="amigo">Amigo Secreto</h2>
        <div class="d-flex flex-wrap justify-content-center align-items-stretch" id="insertHere">
 
        </div>
@@ -33,7 +33,7 @@
         </form>
    </div>
 
-    <div class="modal" id='modal' tabindex="-1">
+    <div class="modal" id='myModal' tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -47,77 +47,85 @@
         </div>
     </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    var socket = io()
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io()
 
-    var form = document.getElementById('form')
-    var form_2 = document.getElementById('form_2')
-    var modal_title = document.getElementById('modal_title')
-    var input = document.getElementById('name')
-    var elemento = document.getElementById('caixa1')
-    var parent = document.getElementById('insertHere')
-    var my_name = ''
-    var owner = ''
+        let form = document.getElementById('form')
+        let form_2 = document.getElementById('form_2')
+        let modal_title = document.getElementById('modal_title')
+        let input = document.getElementById('name')
+        let elemento = document.getElementById('caixa1')
+        let parent = document.getElementById('insertHere')
+        let amigo = document.getElementById('amigo')
+        let my_name = ''
+        let owner = ''
 
-    function hide() {
-        setTimeout(() => { elemento.parentNode.removeChild(elemento) }, 800);
-    }
+        form.addEventListener('submit', function(e) {
+            e.preventDefault()
+            if (input.value !== '') {
+                my_name = input.value.toUpperCase()
+                socket.emit('send name', input.value)
+            }
+        })
 
-    form.addEventListener('submit', function(e) {
-        e.preventDefault()
-        if (input.value !== '') {
-            my_name = input.value.toUpperCase()
-            socket.emit('send name', input.value)
-        }
-    })
+        form_2.addEventListener('submit', function (e) {
+            e.preventDefault()
+            socket.emit('sortear')
+        })
 
-    form_2.addEventListener('submit', function (e) {
-        e.preventDefault()
-        socket.emit('sortear')
-    })
+        socket.on('hide', () => {
+            try{
+                elemento.parentNode.removeChild(elemento)
+                //setTimeout(() => { elemento.parentNode.removeChild(elemento) }, 800);
+                input.value = ''
+            }catch (e) {}
+        })
 
-    socket.on('error_message', (msg) => {
-        alert(msg)
-    })
+        socket.on('error_message', (msg) => {
+            alert(msg)
+            input.value = ''
+        })
 
-    socket.on('room_owner', (room_owner) => {
-       owner = room_owner
-        if(my_name !== owner)
-            document.getElementById('sortear').parentNode.removeChild(document.getElementById('sortear'))
-    })
+        socket.on('room_owner', (room_owner) => {
+           owner = room_owner
+            if(my_name !== owner)
+                try{
+                    document.getElementById('sortear').parentNode.removeChild(document.getElementById('sortear'))
+                }catch (e){}
+        })
 
-    socket.on('insertParticipant', (list) => {
-        for (let i = 0; i < list.length; i++) {
-            var elem = '<div class="btn btn-light border border-primary p-5 m-2 hover-color remover" id="' + i + '">' + list[i] + '</div>'
-            parent.innerHTML += elem
-        }
-    })
+        socket.on('insertParticipant', (list) => {
+            for (let i = 0; i < list.length; i++) {
+                const elem = '<div class="btn btn-light border border-primary p-5 m-2 hover-color remover" id="' + i + '">' + list[i] + '</div>'
+                parent.innerHTML += elem
+            }
+        })
 
-    socket.on('removeAllParticipant', (list)=>{
-        for (let i = 0; i < list.length; i++) {
-            document.getElementById(i).parentNode.removeChild(document.getElementById(i))
-        }
-    })
+        socket.on('removeAllParticipant', (list)=>{
+            for (let i = 0; i < list.length; i++) {
+                try{
+                    document.getElementById(i).parentNode.removeChild(document.getElementById(i))
+                }catch (e){}
+            }
+        })
 
-    socket.on('sorteado', (list) => {
+        socket.on('sorteado', (list) => {
+            if(list[0] === my_name) {
+                amigo.innerHTML = 'Você é o amigo secreto de ' + '<span class="text-primary">' + list[1] + '</span>'
+                console.log('Você é o amigo secreto de ' + list[1])
+            }else if(list[1] === my_name){
+                amigo.innerHTML = 'Você é o amigo secreto de ' + '<span class="text-primary">' + list[0] + '</span>'
+                console.log('Você é o amigo secreto de ' + list[0])
+            }
+        })
 
-        if(list[0] === my_name){
-            console.log(list[1])
-            modal_title.value = 'Você é o amigo secreto de ' + list[1]
-            console.log('Você é o amigo secreto de ' + list[1])
-        }else if(list[1] === my_name){
-            console.log(list[0])
-            modal_title.value = 'Você é o amigo secreto de ' + list[0]
-            console.log('Você é o amigo secreto de ' + list[0])
-        }
-    })
+        socket.on("connect", () => {
+            // ...
+        })
 
-    socket.on("connect", () => {
-        // ...
-    })
-
-    socket.on("data", () => { /* ... */ });
-</script>
+        socket.on("data", () => { /* ... */ });
+    </script>
 </body>
 </html>

@@ -47,10 +47,10 @@
         </div>
     </div>
 
-    <script src="socket.io/socket.io.js"></script>
+    <script src="node_modules/socket.io/client-dist/socket.io.js"></script>
     <script>
 
-        let socket = io()
+        let socket = io('https://amigo-secreto-pi.vercel.app/')
 
         let form = document.getElementById('form')
         let form_2 = document.getElementById('form_2')
